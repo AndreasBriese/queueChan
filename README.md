@@ -23,22 +23,32 @@ In the end you might come up with mixing threadsafe and non-threadsafe calls dep
 ### Usage
 Get it as usual with 
 
-```go get github.com/AndreasBriese/queueChan``` 
+```go 
+	go get github.com/AndreasBriese/queueChan
+``` 
 
 and import with 
 
-```import (
-	...
-	"github.com/AndreasBriese/queueChan"
-)``` 
+```go 
+	import (
+		...
+		"github.com/AndreasBriese/queueChan"
+	)
+``` 
 
 Instanziate by your taste and with/without predefined length (default is capacity=16; will always use the next higher pow2 (1000->1024)).
 
-```var qc1 queueChan.QueueChan = queueChan.New(1000)
-qc2 := queueChan.New(1000)
-qc3 := (&queueChan.QueueChan{}).New()
-fmt.Printf("number of elements:%v  capacity: %v  default capacity: %v", qc1.Length(), qc2.Capacity(), qc3.Capacity())
-qc3.Dynamic() // auto shrink from now on, if element are taken away``` 
+```go
+	// Declaration
+	var qc1 queueChan.QueueChan = queueChan.New(1000)
+
+	qc2 := queueChan.New(1000)
+	qc3 := (&queueChan.QueueChan{}).New()
+	
+	fmt.Printf("number of elements:%v  capacity: %v  default capacity: %v", qc1.Length(), qc2.Capacity(), qc3.Capacity())
+	
+	qc3.Dynamic() // auto shrink from now on, if element are taken away
+``` 
 
 QueueChan will allways scale up automatically (doubling) if the capacity is exhausted, but scaling costs process time and memory while processed (the bigger the pile of elements the more, because existing elements need to be copied over to a new temporary channel) and using a predefined approximated capacity will leverage this. 
 
