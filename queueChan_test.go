@@ -272,9 +272,9 @@ func TestQueuePopChanTS(t *testing.T) {
 // BENCHMARKING
 // go test -bench "Bench*" -count 5
 // on my PowerBookPro first run of concurrent
-// triggers b.N testing and multicore use checks  -> lame!
+// triggers b.N testing and multicore use checks  -> first run is lame!
 
-func BenchmarkQueueSerial(b *testing.B) {
+func BenchmarkQueue_serial_PushPop(b *testing.B) {
 	q := (&QueueChan{}).New()
 	for i := 0; i < b.N; i++ {
 		q.Push(i)
@@ -284,48 +284,17 @@ func BenchmarkQueueSerial(b *testing.B) {
 	}
 }
 
-func BenchmarkQueueSerialTS(b *testing.B) {
+func BenchmarkQueue_serial_PushPopPush(b *testing.B) {
 	q := (&QueueChan{}).New()
-	wg.Add(b.N)
 	for i := 0; i < b.N; i++ {
-		go func(i int) {
-			q.PushTS(i)
-			wg.Done()
-		}(i)
+		q.Push(i)
 	}
-	wg.Wait()
-
-	wg.Add(b.N)
 	for i := 0; i < b.N; i++ {
-		go func() {
-			q.PopTS()
-			wg.Done()
-		}()
+		q.PopPush()
 	}
-	wg.Wait()
 }
 
-func BenchmarkQueueSerialTSRing(b *testing.B) {
-	q := (&QueueChan{}).New()
-	wg.Add(b.N)
-	for i := 0; i < b.N; i++ {
-		go func(i int) {
-			q.PushTS(i)
-			wg.Done()
-		}(i)
-	}
-	wg.Wait()
-	wg.Add(b.N)
-	for i := 0; i < b.N; i++ {
-		go func() {
-			q.PopPushTS()
-			wg.Done()
-		}()
-	}
-	wg.Wait()
-}
-
-func BenchmarkQueueSerialFixedLength(b *testing.B) {
+func BenchmarkQueue_serial_PushPop_withLength(b *testing.B) {
 	q := (&QueueChan{}).New(b.N)
 	for i := 0; i < b.N; i++ {
 		q.Push(i)
@@ -335,62 +304,28 @@ func BenchmarkQueueSerialFixedLength(b *testing.B) {
 	}
 }
 
-func BenchmarkQueueSerialTSFixedLength(b *testing.B) {
+func BenchmarkQueue_serial_PushPopPush_withLength(b *testing.B) {
 	q := (&QueueChan{}).New(b.N)
-	wg.Add(b.N)
 	for i := 0; i < b.N; i++ {
-		go func(i int) {
-			q.PushTS(i)
-			wg.Done()
-		}(i)
+		q.Push(i)
 	}
-	wg.Wait()
-	wg.Add(b.N)
 	for i := 0; i < b.N; i++ {
-		go func() {
-			q.PopTS()
-			wg.Done()
-		}()
+		q.PopPush()
 	}
-	wg.Wait()
-}
-func BenchmarkQueueSerialTSRingFixedLength(b *testing.B) {
-	q := (&QueueChan{}).New(b.N)
-	wg.Add(b.N)
-	for i := 0; i < b.N; i++ {
-		go func(i int) {
-			q.PushTS(i)
-			wg.Done()
-		}(i)
-	}
-	wg.Wait()
-	wg.Add(b.N)
-	for i := 0; i < b.N; i++ {
-		go func() {
-			q.PopPushTS()
-			wg.Done()
-		}()
-	}
-	wg.Wait()
 }
 
-func BenchmarkQueuePopChan(b *testing.B) {
+func BenchmarkQueue_serial_PopChan(b *testing.B) {
 	q := (&QueueChan{}).New(b.N)
 
-	wg.Add(b.N)
 	for i := 0; i < b.N; i++ {
-		go func(i int) {
-			q.PushTS(i)
-			wg.Done()
-		}(i)
+		q.Push(i)
 	}
-	wg.Wait()
 
 	wg.Add(1)
 	go func() {
 		n := 0
 		defer func() {
-			fmt.Println("b.N == n ? ->", b.N == n)
+			//			fmt.Printf("b.N == n ? -> %v == %v -> %v\n", b.N, n, b.N == n)
 			wg.Done()
 		}()
 		for {
@@ -411,23 +346,18 @@ func BenchmarkQueuePopChan(b *testing.B) {
 
 }
 
-func BenchmarkQueuePopChanPush(b *testing.B) {
+func BenchmarkQueue_serial_PopChanPush(b *testing.B) {
 	q := (&QueueChan{}).New(b.N)
 
-	wg.Add(b.N)
 	for i := 0; i < b.N; i++ {
-		go func(i int) {
-			q.PushTS(i)
-			wg.Done()
-		}(i)
+		q.Push(i)
 	}
-	wg.Wait()
 
 	wg.Add(1)
 	go func() {
 		n := 0
 		defer func() {
-			fmt.Println("b.N == n ? ->", b.N == n)
+			//			fmt.Printf("b.N == n ? -> %v == %v -> %v\n", b.N, n, b.N == n)
 			wg.Done()
 		}()
 		for {
@@ -449,7 +379,86 @@ func BenchmarkQueuePopChanPush(b *testing.B) {
 
 }
 
-func BenchmarkQueuePopChanTS(b *testing.B) {
+func BenchmarkQueue_concurr_PushPopTS(b *testing.B) {
+	q := (&QueueChan{}).New()
+	wg.Add(b.N)
+	for i := 0; i < b.N; i++ {
+		go func(i int) {
+			q.PushTS(i)
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+
+	wg.Add(b.N)
+	for i := 0; i < b.N; i++ {
+		go func() {
+			q.PopTS()
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+}
+
+func BenchmarkQueue_concurr_PushPopPushTS(b *testing.B) {
+	q := (&QueueChan{}).New()
+	wg.Add(b.N)
+	for i := 0; i < b.N; i++ {
+		go func(i int) {
+			q.PushTS(i)
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+	wg.Add(b.N)
+	for i := 0; i < b.N; i++ {
+		go func() {
+			q.PopPushTS()
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+}
+func BenchmarkQueue_concurr_PushPopTS_withLength(b *testing.B) {
+	q := (&QueueChan{}).New(b.N)
+	wg.Add(b.N)
+	for i := 0; i < b.N; i++ {
+		go func(i int) {
+			q.PushTS(i)
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+	wg.Add(b.N)
+	for i := 0; i < b.N; i++ {
+		go func() {
+			q.PopTS()
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+}
+func BenchmarkQueue_concurr_PushPopPushTS_withLength(b *testing.B) {
+	q := (&QueueChan{}).New(b.N)
+	wg.Add(b.N)
+	for i := 0; i < b.N; i++ {
+		go func(i int) {
+			q.PushTS(i)
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+	wg.Add(b.N)
+	for i := 0; i < b.N; i++ {
+		go func() {
+			q.PopPushTS()
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+}
+
+func BenchmarkQueue_concurr_PopChanTS(b *testing.B) {
 	q := (&QueueChan{}).New(b.N)
 
 	wg.Add(b.N)
@@ -465,12 +474,50 @@ func BenchmarkQueuePopChanTS(b *testing.B) {
 	go func() {
 		n := 0
 		defer func() {
-			fmt.Println("b.N == n ? ->", b.N == n)
+			//			fmt.Printf("b.N == n ? -> %v == %v -> %v\n", b.N, n, b.N == n)
 			wg.Done()
 		}()
 		for {
 			select {
 			case <-q.PopChanTS():
+				n++
+
+			case <-q.Empty:
+				//  ended graceful: queue is empty
+				return
+			}
+
+		}
+
+	}()
+
+	wg.Wait()
+
+}
+
+func BenchmarkQueue_concurr_PopChanPushTS(b *testing.B) {
+	q := (&QueueChan{}).New(b.N)
+
+	wg.Add(b.N)
+	for i := 0; i < b.N; i++ {
+		go func(i int) {
+			q.PushTS(i)
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+
+	wg.Add(1)
+	go func() {
+		n := 0
+		defer func() {
+			//			fmt.Printf("b.N == n ? -> %v == %v -> %v\n", b.N, n, b.N == n)
+			wg.Done()
+		}()
+		for {
+			select {
+			case <-q.PopChanPushTS():
+				q.PopTS()
 				n++
 
 			case <-q.Empty:
