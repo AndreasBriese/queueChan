@@ -19,7 +19,10 @@ type QueueChan struct {
 func New(length ...int) QueueChan {
 	capacity := 16
 	if len(length) == 1 && length[0] > capacity {
-		capacity = length[0]
+		capacity = 1
+		for ll := length[0]; ll > 0; ll >>= 1 {
+			capacity <<= 1
+		}
 	}
 	qu := &QueueChan{
 		q:     make(chan interface{}, capacity),
